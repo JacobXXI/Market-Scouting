@@ -346,9 +346,9 @@ body {
 .table-headings,
 .table-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr) 90px;
   gap: 8px;
   padding: 10px 0;
+  align-items: center;
 }
 
 .table-headings {
@@ -377,6 +377,23 @@ body {
 
 .link.danger {
   color: #d43a3a;
+}
+
+.amount-heading {
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.amount-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.amount-value .pill {
+  background: #e6ebff;
 }
 
 .amount-summary.compact {

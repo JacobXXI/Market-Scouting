@@ -37,6 +37,11 @@ function App() {
   const [amountCounts, setAmountCounts] = useState<Record<string, number>>({})
   const [entries, setEntries] = useState<Entry[]>([])
 
+  const entryColumnTemplate = useMemo(
+    () => `1fr 1fr repeat(${amountOptions.length}, minmax(80px, 0.8fr)) 90px`,
+    [],
+  )
+
   const savedAmountCounts = useMemo(() => {
     return entries.reduce<Record<string, number>>((acc, entry) => {
       acc[entry.amount] = (acc[entry.amount] || 0) + 1
@@ -149,18 +154,30 @@ function App() {
           </div>
           <div className="csv-content">
             <div>
-              <div className="table-headings">
+              <div className="table-headings" style={{ gridTemplateColumns: entryColumnTemplate }}>
                 <span>Age</span>
                 <span>Type</span>
-                <span>Amount</span>
+                {amountOptions.map((option) => (
+                  <span key={option.label} className="amount-heading">
+                    {option.label}
+                  </span>
+                ))}
                 <span></span>
               </div>
               <div className="table-body">
                 {entries.map((entry, index) => (
-                  <div key={`${entry.age}-${entry.type}-${index}`} className="table-row">
+                  <div
+                    key={`${entry.age}-${entry.type}-${index}`}
+                    className="table-row"
+                    style={{ gridTemplateColumns: entryColumnTemplate }}
+                  >
                     <span>{entry.age}</span>
                     <span>{entry.type}</span>
-                    <span>{entry.amount}</span>
+                    {amountOptions.map((option) => (
+                      <span key={option.label} className="amount-value">
+                        {entry.amount === option.label ? <span className="pill">1</span> : '0'}
+                      </span>
+                    ))}
                     <button className="link danger" onClick={() => handleDeleteEntry(index)}>
                       Delete
                     </button>

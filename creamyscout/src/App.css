@@ -234,6 +234,45 @@ body {
   padding: 12px 14px;
 }
 
+.amount-summary {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.amount-summary-headings,
+.amount-summary-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.amount-summary-headings {
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+
+.amount-summary-row {
+  padding: 6px 0;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eef0f8;
+  font-weight: 700;
+}
+
 .hint {
   display: block;
   text-transform: uppercase;

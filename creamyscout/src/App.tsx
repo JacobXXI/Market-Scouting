@@ -279,6 +279,18 @@ function App() {
                 <strong>{form.amount}</strong>
               </div>
             </div>
+            <div className="amount-summary">
+              <div className="amount-summary-headings">
+                <span>Amount option</span>
+                <span>Quantity</span>
+              </div>
+              {amountOptions.map((option) => (
+                <div key={option.label} className="amount-summary-row">
+                  <span>{option.label}</span>
+                  <span className="pill">{amountCounts[option.label] || 0}</span>
+                </div>
+              ))}
+            </div>
             <button className="primary full" onClick={handleConfirm} disabled={!form.age || !form.type || !form.amount}>
               Confirm & Save to CSV
             </button>

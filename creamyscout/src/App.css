@@ -296,6 +296,14 @@ body {
   max-width: 720px;
 }
 
+.csv-content {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 16px;
+  align-items: start;
+  margin-top: 14px;
+}
+
 .csv-header {
   display: flex;
   align-items: center;
@@ -362,6 +370,13 @@ body {
   margin-top: 10px;
 }
 
+.amount-column {
+  background: #f7f8ff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px;
+}
+
 @media (max-width: 600px) {
   .grid {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -378,5 +393,9 @@ body {
 
   .header h1 {
     font-size: 26px;
+  }
+
+  .csv-content {
+    grid-template-columns: 1fr;
   }
 }

@@ -108,6 +108,7 @@ function App() {
     if (!form.age || !form.type || !form.amount) return
     setEntries((prev) => [...prev, form])
     setForm({ age: '', type: '', amount: '' })
+    setAmountCounts({})
     setStep('start')
   }
 
@@ -146,35 +147,41 @@ function App() {
               Download CSV
             </a>
           </div>
-          <div className="table-headings">
-            <span>Age</span>
-            <span>Type</span>
-            <span>Amount</span>
-            <span></span>
-          </div>
-          <div className="table-body">
-            {entries.map((entry, index) => (
-              <div key={`${entry.age}-${entry.type}-${index}`} className="table-row">
-                <span>{entry.age}</span>
-                <span>{entry.type}</span>
-                <span>{entry.amount}</span>
-                <button className="link danger" onClick={() => handleDeleteEntry(index)}>
-                  Delete
-                </button>
+          <div className="csv-content">
+            <div>
+              <div className="table-headings">
+                <span>Age</span>
+                <span>Type</span>
+                <span>Amount</span>
+                <span></span>
               </div>
-            ))}
-          </div>
-          <div className="amount-summary compact">
-            <div className="amount-summary-headings">
-              <span>Amount option</span>
-              <span>Quantity</span>
+              <div className="table-body">
+                {entries.map((entry, index) => (
+                  <div key={`${entry.age}-${entry.type}-${index}`} className="table-row">
+                    <span>{entry.age}</span>
+                    <span>{entry.type}</span>
+                    <span>{entry.amount}</span>
+                    <button className="link danger" onClick={() => handleDeleteEntry(index)}>
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-            {amountOptions.map((option) => (
-              <div key={option.label} className="amount-summary-row">
-                <span>{option.label}</span>
-                <span className="pill">{savedAmountCounts[option.label] || 0}</span>
+            <div className="amount-column">
+              <div className="amount-summary compact">
+                <div className="amount-summary-headings">
+                  <span>Amount option</span>
+                  <span>Quantity</span>
+                </div>
+                {amountOptions.map((option) => (
+                  <div key={option.label} className="amount-summary-row">
+                    <span>{option.label}</span>
+                    <span className="pill">{savedAmountCounts[option.label] || 0}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       )}

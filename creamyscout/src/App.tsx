@@ -42,13 +42,6 @@ function App() {
     [],
   )
 
-  const savedAmountCounts = useMemo(() => {
-    return entries.reduce<Record<string, number>>((acc, entry) => {
-      acc[entry.amount] = (acc[entry.amount] || 0) + 1
-      return acc
-    }, {})
-  }, [entries])
-
   useEffect(() => {
     const storedEntries = localStorage.getItem('market-entries')
     const storedCounts = localStorage.getItem('market-amount-counts')
@@ -153,50 +146,35 @@ function App() {
             </a>
           </div>
           <div className="csv-content">
-            <div>
-              <div className="table-headings" style={{ gridTemplateColumns: entryColumnTemplate }}>
-                <span>Age</span>
-                <span>Type</span>
-                {amountOptions.map((option) => (
-                  <span key={option.label} className="amount-heading">
-                    {option.label}
-                  </span>
-                ))}
-                <span></span>
-              </div>
-              <div className="table-body">
-                {entries.map((entry, index) => (
-                  <div
-                    key={`${entry.age}-${entry.type}-${index}`}
-                    className="table-row"
-                    style={{ gridTemplateColumns: entryColumnTemplate }}
-                  >
-                    <span>{entry.age}</span>
-                    <span>{entry.type}</span>
-                    {amountOptions.map((option) => (
-                      <span key={option.label} className="amount-value">
-                        {entry.amount === option.label ? <span className="pill">1</span> : '0'}
-                      </span>
-                    ))}
-                    <button className="link danger" onClick={() => handleDeleteEntry(index)}>
-                      Delete
-                    </button>
-                  </div>
-                ))}
-              </div>
+            <div className="table-headings" style={{ gridTemplateColumns: entryColumnTemplate }}>
+              <span>Age</span>
+              <span>Type</span>
+              {amountOptions.map((option) => (
+                <span key={option.label} className="amount-heading">
+                  {option.label}
+                </span>
+              ))}
+              <span></span>
             </div>
-            <div className="amount-column">
-              <div className="amount-summary compact columned">
-                <div className="amount-summary-title">Amount selections</div>
-                <div className="amount-grid">
+            <div className="table-body">
+              {entries.map((entry, index) => (
+                <div
+                  key={`${entry.age}-${entry.type}-${index}`}
+                  className="table-row"
+                  style={{ gridTemplateColumns: entryColumnTemplate }}
+                >
+                  <span>{entry.age}</span>
+                  <span>{entry.type}</span>
                   {amountOptions.map((option) => (
-                    <div key={option.label} className="amount-summary-cell">
-                      <span className="amount-label">{option.label}</span>
-                      <span className="pill">{savedAmountCounts[option.label] || 0}</span>
-                    </div>
+                    <span key={option.label} className="amount-value">
+                      {entry.amount === option.label ? <span className="pill">1</span> : '0'}
+                    </span>
                   ))}
+                  <button className="link danger" onClick={() => handleDeleteEntry(index)}>
+                    Delete
+                  </button>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>

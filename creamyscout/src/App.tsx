@@ -6,8 +6,14 @@ type Step = 'start' | 'age' | 'type' | 'amount' | 'confirm'
 type Entry = {
   age: string
   type: string
-  amount: string
+  amounts: Record<string, number>
 }
+
+const createEmptyAmountCounts = () =>
+  amountOptions.reduce<Record<string, number>>((acc, option) => {
+    acc[option.label] = 0
+    return acc
+  }, {})
 
 const ageOptions = [
   { label: '0-10', color: '#FFE0E0' },
@@ -33,8 +39,9 @@ const amountOptions = [
 
 function App() {
   const [step, setStep] = useState<Step>('start')
-  const [form, setForm] = useState<Entry>({ age: '', type: '', amount: '' })
-  const [amountCounts, setAmountCounts] = useState<Record<string, number>>({})
+  const [form, setForm] = useState<{ age: string; type: string }>({ age: '', type: '' })
+  const [selectedAmount, setSelectedAmount] = useState('')
+  const [amountCounts, setAmountCounts] = useState<Record<string, number>>(createEmptyAmountCounts)
   const [entries, setEntries] = useState<Entry[]>([])
 
   const entryColumnTemplate = useMemo(
@@ -47,14 +54,44 @@ function App() {
     const storedCounts = localStorage.getItem('market-amount-counts')
     if (storedEntries) {
       try {
-        setEntries(JSON.parse(storedEntries))
+        const parsed = JSON.parse(storedEntries)
+        if (Array.isArray(parsed)) {
+          const normalized = parsed.map((entry) => {
+            if (entry && typeof entry === 'object' && entry.amounts) {
+              return {
+                age: entry.age || '',
+                type: entry.type || '',
+                amounts: {
+                  ...createEmptyAmountCounts(),
+                  ...entry.amounts,
+                },
+              } as Entry
+            }
+
+            const fallbackCounts = createEmptyAmountCounts()
+            if (entry && typeof entry === 'object' && entry.amount) {
+              fallbackCounts[entry.amount] = 1
+            }
+
+            return {
+              age: entry?.age || '',
+              type: entry?.type || '',
+              amounts: fallbackCounts,
+            }
+          })
+
+          setEntries(normalized)
+        }
       } catch (error) {
         console.error('Failed to parse saved entries', error)
       }
     }
     if (storedCounts) {
       try {
-        setAmountCounts(JSON.parse(storedCounts))
+        const parsedCounts = JSON.parse(storedCounts)
+        if (parsedCounts && typeof parsedCounts === 'object') {
+          setAmountCounts({ ...createEmptyAmountCounts(), ...parsedCounts })
+        }
       } catch (error) {
         console.error('Failed to parse saved counts', error)
       }
@@ -70,10 +107,17 @@ function App() {
   }, [amountCounts])
 
   const csvContent = useMemo(() => {
-    const header = 'age,type,amount'
-    const rows = entries.map((entry) => `${entry.age},${entry.type},${entry.amount}`)
+    const header = ['age', 'type', ...amountOptions.map((option) => option.label)].join(',')
+    const rows = entries.map((entry) =>
+      [entry.age, entry.type, ...amountOptions.map((option) => entry.amounts[option.label] || 0)].join(','),
+    )
     return [header, ...rows].join('\n')
   }, [entries])
+
+  const hasAmountSelections = useMemo(
+    () => Object.values(amountCounts).some((count) => count > 0),
+    [amountCounts],
+  )
 
   const handleSelectAge = (age: string) => {
     setForm((prev) => ({ ...prev, age }))
@@ -86,7 +130,7 @@ function App() {
   }
 
   const handleSelectAmount = (amount: string) => {
-    setForm((prev) => ({ ...prev, amount }))
+    setSelectedAmount(amount)
     setAmountCounts((prev) => ({
       ...prev,
       [amount]: (prev[amount] || 0) + 1,
@@ -103,15 +147,24 @@ function App() {
   }
 
   const handleConfirm = () => {
-    if (!form.age || !form.type || !form.amount) return
-    setEntries((prev) => [...prev, form])
-    setForm({ age: '', type: '', amount: '' })
-    setAmountCounts({})
+    if (!form.age || !form.type || !hasAmountSelections) return
+    const entry: Entry = {
+      age: form.age,
+      type: form.type,
+      amounts: { ...createEmptyAmountCounts(), ...amountCounts },
+    }
+
+    setEntries((prev) => [...prev, entry])
+    setForm({ age: '', type: '' })
+    setSelectedAmount('')
+    setAmountCounts(createEmptyAmountCounts())
     setStep('start')
   }
 
   const resetToStart = () => {
-    setForm({ age: '', type: '', amount: '' })
+    setForm({ age: '', type: '' })
+    setSelectedAmount('')
+    setAmountCounts(createEmptyAmountCounts())
     setStep('start')
   }
 
@@ -163,13 +216,13 @@ function App() {
                   className="table-row"
                   style={{ gridTemplateColumns: entryColumnTemplate }}
                 >
-                  <span>{entry.age}</span>
-                  <span>{entry.type}</span>
-                  {amountOptions.map((option) => (
-                    <span key={option.label} className="amount-value">
-                      {entry.amount === option.label ? <span className="pill">1</span> : '0'}
-                    </span>
-                  ))}
+              <span>{entry.age}</span>
+              <span>{entry.type}</span>
+              {amountOptions.map((option) => (
+                <span key={option.label} className="amount-value">
+                  {entry.amounts[option.label] ? <span className="pill">{entry.amounts[option.label]}</span> : '0'}
+                </span>
+              ))}
                   <button className="link danger" onClick={() => handleDeleteEntry(index)}>
                     Delete
                   </button>
@@ -213,7 +266,7 @@ function App() {
     <div className="grid">
       {amountOptions.map((option) => {
         const count = amountCounts[option.label] || 0
-        const isSelected = form.amount === option.label
+        const isSelected = selectedAmount === option.label
         return (
           <div key={option.label} className="grid-card amount-card" style={{ backgroundColor: option.color }}>
             <button className="amount-select" onClick={() => handleSelectAmount(option.label)}>
@@ -267,7 +320,9 @@ function App() {
         <div className="screen">
           <BackButton
             onClick={() => {
-              setForm((prev) => ({ ...prev, type: '', amount: '' }))
+              setForm((prev) => ({ ...prev, type: '' }))
+              setSelectedAmount('')
+              setAmountCounts(createEmptyAmountCounts())
               setStep('type')
             }}
           />
@@ -276,7 +331,7 @@ function App() {
               <h2>Select Spend Amount</h2>
               <p>Tap to add +1. Use the cross to reduce.</p>
             </div>
-            <button className="primary" disabled={!form.amount} onClick={() => setStep('confirm')}>
+            <button className="primary" disabled={!hasAmountSelections} onClick={() => setStep('confirm')}>
               Proceed
             </button>
           </div>
@@ -302,10 +357,6 @@ function App() {
                 <span className="hint">Type</span>
                 <strong>{form.type}</strong>
               </div>
-              <div>
-                <span className="hint">Amount</span>
-                <strong>{form.amount}</strong>
-              </div>
             </div>
             <div className="amount-summary columned">
               <div className="amount-summary-title">Amount selections</div>
@@ -318,7 +369,7 @@ function App() {
                 ))}
               </div>
             </div>
-            <button className="primary full" onClick={handleConfirm} disabled={!form.age || !form.type || !form.amount}>
+            <button className="primary full" onClick={handleConfirm} disabled={!form.age || !form.type || !hasAmountSelections}>
               Confirm & Save to CSV
             </button>
           </div>

@@ -37,6 +37,13 @@ function App() {
   const [amountCounts, setAmountCounts] = useState<Record<string, number>>({})
   const [entries, setEntries] = useState<Entry[]>([])
 
+  const savedAmountCounts = useMemo(() => {
+    return entries.reduce<Record<string, number>>((acc, entry) => {
+      acc[entry.amount] = (acc[entry.amount] || 0) + 1
+      return acc
+    }, {})
+  }, [entries])
+
   useEffect(() => {
     const storedEntries = localStorage.getItem('market-entries')
     const storedCounts = localStorage.getItem('market-amount-counts')
@@ -109,6 +116,10 @@ function App() {
     setStep('start')
   }
 
+  const handleDeleteEntry = (index: number) => {
+    setEntries((prev) => prev.filter((_, i) => i !== index))
+  }
+
   const StartScreen = () => (
     <div className="screen start-screen">
       <div className="header">
@@ -139,6 +150,7 @@ function App() {
             <span>Age</span>
             <span>Type</span>
             <span>Amount</span>
+            <span></span>
           </div>
           <div className="table-body">
             {entries.map((entry, index) => (
@@ -146,6 +158,21 @@ function App() {
                 <span>{entry.age}</span>
                 <span>{entry.type}</span>
                 <span>{entry.amount}</span>
+                <button className="link danger" onClick={() => handleDeleteEntry(index)}>
+                  Delete
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="amount-summary compact">
+            <div className="amount-summary-headings">
+              <span>Amount option</span>
+              <span>Quantity</span>
+            </div>
+            {amountOptions.map((option) => (
+              <div key={option.label} className="amount-summary-row">
+                <span>{option.label}</span>
+                <span className="pill">{savedAmountCounts[option.label] || 0}</span>
               </div>
             ))}
           </div>

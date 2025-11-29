@@ -325,7 +325,7 @@ body {
 .table-headings,
 .table-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, 1fr) 90px;
   gap: 8px;
   padding: 10px 0;
 }
@@ -342,6 +342,24 @@ body {
 
 .table-row:last-of-type {
   border-bottom: none;
+}
+
+.link {
+  background: none;
+  border: none;
+  color: #3a5cd4;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 10px;
+  text-align: right;
+}
+
+.link.danger {
+  color: #d43a3a;
+}
+
+.amount-summary.compact {
+  margin-top: 10px;
 }
 
 @media (max-width: 600px) {

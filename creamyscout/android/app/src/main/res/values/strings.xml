@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">creamyscout</string>
+    <string name="title_activity_main">creamyscout</string>
+    <string name="package_name">littlecreamyco.com</string>
+    <string name="custom_url_scheme">littlecreamyco.com</string>
+</resources>

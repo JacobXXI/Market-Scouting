@@ -1,3 +1,6 @@
+import { Capacitor } from '@capacitor/core'
+import { Directory, Encoding, Filesystem } from '@capacitor/filesystem'
+import { Share } from '@capacitor/share'
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
@@ -329,6 +332,41 @@ function App() {
     setEntries((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const handleDownloadCsv = async () => {
+    const fileName = 'market-scouting.csv'
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const { uri } = await Filesystem.writeFile({
+          path: fileName,
+          data: csvContent,
+          directory: Directory.Documents,
+          encoding: Encoding.UTF8,
+          recursive: true,
+        })
+
+        await Share.share({
+          title: 'Market Scouting CSV',
+          text: 'Exported visitor insights',
+          url: uri,
+          dialogTitle: 'Share CSV',
+        })
+      } catch (error) {
+        console.error('Failed to save CSV on device', error)
+        alert('Unable to save CSV file. Please check storage permissions and try again.')
+      }
+      return
+    }
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   const StartScreen = () => (
     <div className="screen start-screen">
       <div className="header">
@@ -343,18 +381,14 @@ function App() {
       {entries.length > 0 && (
         <div className="csv-preview">
           <div className="csv-header">
-            <div>
-              <h3>Saved Entries</h3>
-              <p>Each confirmation appends to the CSV log.</p>
+              <div>
+                <h3>Saved Entries</h3>
+                <p>Each confirmation appends to the CSV log.</p>
+              </div>
+              <button className="download" type="button" onClick={handleDownloadCsv}>
+                Download CSV
+              </button>
             </div>
-            <a
-              className="download"
-              href={`data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`}
-              download="market-scouting.csv"
-            >
-              Download CSV
-            </a>
-          </div>
           <div className="csv-content">
             <div className="table-headings" style={{ gridTemplateColumns: entryColumnTemplate }}>
               <span>Age</span>

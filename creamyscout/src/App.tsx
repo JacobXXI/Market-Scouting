@@ -1,20 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
-type Step = 'start' | 'age' | 'type' | 'amount' | 'confirm'
-
-type Entry = {
-  age: string
-  type: string
-  amounts: Record<string, number>
-}
-
-const createEmptyAmountCounts = () =>
-  amountOptions.reduce<Record<string, number>>((acc, option) => {
-    acc[option.label] = 0
-    return acc
-  }, {})
-
 const ageOptions = [
   { label: '0-10', color: '#FFE0E0' },
   { label: '10-20', color: '#E0F7FF' },
@@ -37,6 +23,40 @@ const amountOptions = [
   { label: '$20+', color: '#F3E5F5' },
 ]
 
+const categoryOptions = [
+  { label: 'Accessories', color: '#FFE6F0' },
+  { label: 'Clothes', color: '#E6FFF5' },
+  { label: 'Others', color: '#FFF7E6' },
+]
+
+type Step = 'start' | 'age' | 'type' | 'amount' | 'confirm'
+
+type CategoryAmounts = Record<string, Record<string, number>>
+
+type Entry = {
+  age: string
+  type: string
+  categoryAmounts: CategoryAmounts
+}
+
+const createEmptyAmountCounts = () =>
+  amountOptions.reduce<Record<string, number>>((acc, option) => {
+    acc[option.label] = 0
+    return acc
+  }, {})
+
+const createEmptyCategoryAmountCounts = () =>
+  categoryOptions.reduce<CategoryAmounts>((acc, category) => {
+    acc[category.label] = createEmptyAmountCounts()
+    return acc
+  }, {})
+
+const createEmptySelectedAmounts = () =>
+  categoryOptions.reduce<Record<string, string>>((acc, category) => {
+    acc[category.label] = ''
+    return acc
+  }, {})
+
 const isLocalStorageAvailable = () => {
   try {
     const testKey = '__market-storage-test__'
@@ -52,8 +72,9 @@ const isLocalStorageAvailable = () => {
 function App() {
   const [step, setStep] = useState<Step>('start')
   const [form, setForm] = useState<{ age: string; type: string }>({ age: '', type: '' })
-  const [selectedAmount, setSelectedAmount] = useState('')
-  const [amountCounts, setAmountCounts] = useState<Record<string, number>>(createEmptyAmountCounts)
+  const [selectedCategory, setSelectedCategory] = useState(categoryOptions[0].label)
+  const [selectedAmounts, setSelectedAmounts] = useState<Record<string, string>>(createEmptySelectedAmounts)
+  const [categoryAmounts, setCategoryAmounts] = useState<CategoryAmounts>(createEmptyCategoryAmountCounts)
   const [entries, setEntries] = useState<Entry[]>([])
 
   const storageAvailable = useMemo(() => {
@@ -62,7 +83,7 @@ function App() {
   }, [])
 
   const entryColumnTemplate = useMemo(
-    () => `1fr 1fr repeat(${amountOptions.length}, minmax(80px, 0.8fr)) 90px`,
+    () => `1fr 1fr repeat(${categoryOptions.length}, minmax(80px, 0.8fr)) 90px`,
     [],
   )
 
@@ -70,36 +91,47 @@ function App() {
     if (!storageAvailable) return
 
     const storedEntries = localStorage.getItem('market-entries')
-    const storedCounts = localStorage.getItem('market-amount-counts')
+    const storedCounts = localStorage.getItem('market-category-amounts')
     const storedForm = localStorage.getItem('market-form-state')
     const storedStep = localStorage.getItem('market-step') as Step | null
     const storedSelectedAmount = localStorage.getItem('market-selected-amount')
+    const storedSelectedCategory = localStorage.getItem('market-selected-category')
+    const storedSelectedAmounts = localStorage.getItem('market-selected-amounts')
 
     if (storedEntries) {
       try {
         const parsed = JSON.parse(storedEntries)
         if (Array.isArray(parsed)) {
           const normalized = parsed.map((entry) => {
-            if (entry && typeof entry === 'object' && entry.amounts) {
-              return {
-                age: entry.age || '',
-                type: entry.type || '',
-                amounts: {
-                  ...createEmptyAmountCounts(),
-                  ...entry.amounts,
-                },
-              } as Entry
-            }
+            const baseCategoryCounts = createEmptyCategoryAmountCounts()
 
-            const fallbackCounts = createEmptyAmountCounts()
-            if (entry && typeof entry === 'object' && entry.amount) {
-              fallbackCounts[entry.amount] = 1
+            if (entry && typeof entry === 'object') {
+              if (entry.categoryAmounts && typeof entry.categoryAmounts === 'object') {
+                categoryOptions.forEach((category) => {
+                  baseCategoryCounts[category.label] = {
+                    ...baseCategoryCounts[category.label],
+                    ...(entry.categoryAmounts[category.label] || {}),
+                  }
+                })
+              } else if (entry.amounts && typeof entry.amounts === 'object') {
+                const defaultCategory = categoryOptions[0].label
+                baseCategoryCounts[defaultCategory] = {
+                  ...baseCategoryCounts[defaultCategory],
+                  ...entry.amounts,
+                }
+              } else if (entry.amount && typeof entry.amount === 'string') {
+                const defaultCategory = categoryOptions[0].label
+                baseCategoryCounts[defaultCategory] = {
+                  ...baseCategoryCounts[defaultCategory],
+                  [entry.amount]: 1,
+                }
+              }
             }
 
             return {
               age: entry?.age || '',
               type: entry?.type || '',
-              amounts: fallbackCounts,
+              categoryAmounts: baseCategoryCounts,
             }
           })
 
@@ -113,7 +145,24 @@ function App() {
       try {
         const parsedCounts = JSON.parse(storedCounts)
         if (parsedCounts && typeof parsedCounts === 'object') {
-          setAmountCounts({ ...createEmptyAmountCounts(), ...parsedCounts })
+          const normalizedCounts = createEmptyCategoryAmountCounts()
+
+          if (Object.values(parsedCounts).every((value) => typeof value === 'number')) {
+            const defaultCategory = categoryOptions[0].label
+            normalizedCounts[defaultCategory] = {
+              ...normalizedCounts[defaultCategory],
+              ...parsedCounts,
+            }
+          } else {
+            categoryOptions.forEach((category) => {
+              normalizedCounts[category.label] = {
+                ...normalizedCounts[category.label],
+                ...(parsedCounts[category.label] || {}),
+              }
+            })
+          }
+
+          setCategoryAmounts(normalizedCounts)
         }
       } catch (error) {
         console.error('Failed to parse saved counts', error)
@@ -135,8 +184,21 @@ function App() {
     if (storedStep && ['start', 'age', 'type', 'amount', 'confirm'].includes(storedStep)) {
       setStep(storedStep)
     }
-    if (storedSelectedAmount) {
-      setSelectedAmount(storedSelectedAmount)
+    if (storedSelectedCategory && categoryOptions.some((category) => category.label === storedSelectedCategory)) {
+      setSelectedCategory(storedSelectedCategory)
+    }
+    if (storedSelectedAmounts) {
+      try {
+        const parsedSelected = JSON.parse(storedSelectedAmounts)
+        if (parsedSelected && typeof parsedSelected === 'object') {
+          setSelectedAmounts({ ...createEmptySelectedAmounts(), ...parsedSelected })
+        }
+      } catch (error) {
+        console.error('Failed to parse selected amounts', error)
+      }
+    } else if (storedSelectedAmount) {
+      const defaultCategory = categoryOptions[0].label
+      setSelectedAmounts((prev) => ({ ...prev, [defaultCategory]: storedSelectedAmount }))
     }
   }, [storageAvailable])
 
@@ -147,8 +209,8 @@ function App() {
 
   useEffect(() => {
     if (!storageAvailable) return
-    localStorage.setItem('market-amount-counts', JSON.stringify(amountCounts))
-  }, [amountCounts, storageAvailable])
+    localStorage.setItem('market-category-amounts', JSON.stringify(categoryAmounts))
+  }, [categoryAmounts, storageAvailable])
 
   useEffect(() => {
     if (!storageAvailable) return
@@ -162,20 +224,32 @@ function App() {
 
   useEffect(() => {
     if (!storageAvailable) return
-    localStorage.setItem('market-selected-amount', selectedAmount)
-  }, [selectedAmount, storageAvailable])
+    localStorage.setItem('market-selected-category', selectedCategory)
+  }, [selectedCategory, storageAvailable])
+
+  useEffect(() => {
+    if (!storageAvailable) return
+    localStorage.setItem('market-selected-amounts', JSON.stringify(selectedAmounts))
+  }, [selectedAmounts, storageAvailable])
 
   const csvContent = useMemo(() => {
-    const header = ['age', 'type', ...amountOptions.map((option) => option.label)].join(',')
-    const rows = entries.map((entry) =>
-      [entry.age, entry.type, ...amountOptions.map((option) => entry.amounts[option.label] || 0)].join(','),
-    )
+    const header = ['age', 'type', ...categoryOptions.map((option) => option.label)].join(',')
+    const rows = entries.map((entry) => {
+      const categoryTotals = categoryOptions.map((category) => {
+        const amounts = entry.categoryAmounts[category.label] || {}
+        return Object.values(amounts).reduce((sum, value) => sum + value, 0)
+      })
+      return [entry.age, entry.type, ...categoryTotals].join(',')
+    })
     return [header, ...rows].join('\n')
   }, [entries])
 
   const hasAmountSelections = useMemo(
-    () => Object.values(amountCounts).some((count) => count > 0),
-    [amountCounts],
+    () =>
+      Object.values(categoryAmounts).some((category) =>
+        Object.values(category).some((count: number) => count > 0),
+      ),
+    [categoryAmounts],
   )
 
   const handleSelectAge = (age: string) => {
@@ -189,19 +263,32 @@ function App() {
   }
 
   const handleSelectAmount = (amount: string) => {
-    setSelectedAmount(amount)
-    setAmountCounts((prev) => ({
+    setSelectedAmounts((prev) => ({
       ...prev,
-      [amount]: (prev[amount] || 0) + 1,
+      [selectedCategory]: amount,
+    }))
+
+    setCategoryAmounts((prev) => ({
+      ...prev,
+      [selectedCategory]: {
+        ...prev[selectedCategory],
+        [amount]: (prev[selectedCategory]?.[amount] || 0) + 1,
+      },
     }))
   }
 
   const decrementAmountCount = (amount: string) => {
-    setAmountCounts((prev) => {
-      const current = prev[amount] || 0
+    setCategoryAmounts((prev) => {
+      const current = prev[selectedCategory]?.[amount] || 0
       const next = Math.max(current - 1, 0)
-      const updated = { ...prev, [amount]: next }
-      return updated
+
+      return {
+        ...prev,
+        [selectedCategory]: {
+          ...prev[selectedCategory],
+          [amount]: next,
+        },
+      }
     })
   }
 
@@ -210,20 +297,22 @@ function App() {
     const entry: Entry = {
       age: form.age,
       type: form.type,
-      amounts: { ...createEmptyAmountCounts(), ...amountCounts },
+      categoryAmounts: { ...createEmptyCategoryAmountCounts(), ...categoryAmounts },
     }
 
     setEntries((prev) => [...prev, entry])
     setForm({ age: '', type: '' })
-    setSelectedAmount('')
-    setAmountCounts(createEmptyAmountCounts())
+    setSelectedCategory(categoryOptions[0].label)
+    setSelectedAmounts(createEmptySelectedAmounts())
+    setCategoryAmounts(createEmptyCategoryAmountCounts())
     setStep('start')
   }
 
   const resetToStart = () => {
     setForm({ age: '', type: '' })
-    setSelectedAmount('')
-    setAmountCounts(createEmptyAmountCounts())
+    setSelectedCategory(categoryOptions[0].label)
+    setSelectedAmounts(createEmptySelectedAmounts())
+    setCategoryAmounts(createEmptyCategoryAmountCounts())
     setStep('start')
   }
 
@@ -261,7 +350,7 @@ function App() {
             <div className="table-headings" style={{ gridTemplateColumns: entryColumnTemplate }}>
               <span>Age</span>
               <span>Type</span>
-              {amountOptions.map((option) => (
+              {categoryOptions.map((option) => (
                 <span key={option.label} className="amount-heading">
                   {option.label}
                 </span>
@@ -277,11 +366,15 @@ function App() {
                 >
               <span>{entry.age}</span>
               <span>{entry.type}</span>
-              {amountOptions.map((option) => (
-                <span key={option.label} className="amount-value">
-                  {entry.amounts[option.label] ? <span className="pill">{entry.amounts[option.label]}</span> : '0'}
-                </span>
-              ))}
+              {categoryOptions.map((option) => {
+                const amounts = entry.categoryAmounts[option.label] || {}
+                const total = Object.values(amounts).reduce((sum, value) => sum + value, 0)
+                return (
+                  <span key={option.label} className="amount-value">
+                    {total ? <span className="pill">{total}</span> : '0'}
+                  </span>
+                )
+              })}
                   <button className="link danger" onClick={() => handleDeleteEntry(index)}>
                     Delete
                   </button>
@@ -324,8 +417,8 @@ function App() {
   const AmountGrid = () => (
     <div className="grid">
       {amountOptions.map((option) => {
-        const count = amountCounts[option.label] || 0
-        const isSelected = selectedAmount === option.label
+        const count = categoryAmounts[selectedCategory]?.[option.label] || 0
+        const isSelected = selectedAmounts[selectedCategory] === option.label
         return (
           <div key={option.label} className="grid-card amount-card" style={{ backgroundColor: option.color }}>
             <button className="amount-select" onClick={() => handleSelectAmount(option.label)}>
@@ -380,8 +473,9 @@ function App() {
           <BackButton
             onClick={() => {
               setForm((prev) => ({ ...prev, type: '' }))
-              setSelectedAmount('')
-              setAmountCounts(createEmptyAmountCounts())
+              setSelectedCategory(categoryOptions[0].label)
+              setSelectedAmounts(createEmptySelectedAmounts())
+              setCategoryAmounts(createEmptyCategoryAmountCounts())
               setStep('type')
             }}
           />
@@ -393,6 +487,18 @@ function App() {
             <button className="primary" disabled={!hasAmountSelections} onClick={() => setStep('confirm')}>
               Proceed
             </button>
+          </div>
+          <div className="category-tabs">
+            {categoryOptions.map((category) => (
+              <button
+                key={category.label}
+                className={`category-tab ${selectedCategory === category.label ? 'active' : ''}`}
+                onClick={() => setSelectedCategory(category.label)}
+                style={{ backgroundColor: selectedCategory === category.label ? category.color : undefined }}
+              >
+                {category.label}
+              </button>
+            ))}
           </div>
           <AmountGrid />
         </div>
@@ -418,14 +524,28 @@ function App() {
               </div>
             </div>
             <div className="amount-summary columned">
-              <div className="amount-summary-title">Amount selections</div>
-              <div className="amount-grid">
-                {amountOptions.map((option) => (
-                  <div key={option.label} className="amount-summary-cell">
-                    <span className="amount-label">{option.label}</span>
-                    <span className="pill">{amountCounts[option.label] || 0}</span>
-                  </div>
-                ))}
+              <div className="amount-summary-title">Amount selections by category</div>
+              <div className="category-summary-grid">
+                {categoryOptions.map((category) => {
+                  const amounts = categoryAmounts[category.label] || {}
+                  const categoryTotal = Object.values(amounts).reduce((sum, value) => sum + value, 0)
+                  return (
+                    <div key={category.label} className="category-summary">
+                      <div className="category-summary-header">
+                        <span className="amount-label">{category.label}</span>
+                        <span className="pill">{categoryTotal}</span>
+                      </div>
+                      <div className="amount-grid compact">
+                        {amountOptions.map((option) => (
+                          <div key={option.label} className="amount-summary-cell">
+                            <span className="amount-label">{option.label}</span>
+                            <span className="pill">{amounts[option.label] || 0}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
             <button className="primary full" onClick={handleConfirm} disabled={!form.age || !form.type || !hasAmountSelections}>

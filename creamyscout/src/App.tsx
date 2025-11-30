@@ -52,6 +52,10 @@ function App() {
   useEffect(() => {
     const storedEntries = localStorage.getItem('market-entries')
     const storedCounts = localStorage.getItem('market-amount-counts')
+    const storedForm = localStorage.getItem('market-form-state')
+    const storedStep = localStorage.getItem('market-step') as Step | null
+    const storedSelectedAmount = localStorage.getItem('market-selected-amount')
+
     if (storedEntries) {
       try {
         const parsed = JSON.parse(storedEntries)
@@ -96,6 +100,25 @@ function App() {
         console.error('Failed to parse saved counts', error)
       }
     }
+    if (storedForm) {
+      try {
+        const parsedForm = JSON.parse(storedForm)
+        if (parsedForm && typeof parsedForm === 'object') {
+          setForm({
+            age: parsedForm.age || '',
+            type: parsedForm.type || '',
+          })
+        }
+      } catch (error) {
+        console.error('Failed to parse saved form', error)
+      }
+    }
+    if (storedStep && ['start', 'age', 'type', 'amount', 'confirm'].includes(storedStep)) {
+      setStep(storedStep)
+    }
+    if (storedSelectedAmount) {
+      setSelectedAmount(storedSelectedAmount)
+    }
   }, [])
 
   useEffect(() => {
@@ -105,6 +128,18 @@ function App() {
   useEffect(() => {
     localStorage.setItem('market-amount-counts', JSON.stringify(amountCounts))
   }, [amountCounts])
+
+  useEffect(() => {
+    localStorage.setItem('market-form-state', JSON.stringify(form))
+  }, [form])
+
+  useEffect(() => {
+    localStorage.setItem('market-step', step)
+  }, [step])
+
+  useEffect(() => {
+    localStorage.setItem('market-selected-amount', selectedAmount)
+  }, [selectedAmount])
 
   const csvContent = useMemo(() => {
     const header = ['age', 'type', ...amountOptions.map((option) => option.label)].join(',')

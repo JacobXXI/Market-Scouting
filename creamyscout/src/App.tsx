@@ -233,14 +233,23 @@ function App() {
   }, [selectedAmounts, storageAvailable])
 
   const csvContent = useMemo(() => {
-    const header = ['age', 'type', ...categoryOptions.map((option) => option.label)].join(',')
+    const categoryAmountHeaders = categoryOptions.flatMap((category) => [
+      ...amountOptions.map((amount) => `${category.label} ${amount.label}`),
+      `${category.label} Total`,
+    ])
+
+    const header = ['age', 'type', ...categoryAmountHeaders].join(',')
     const rows = entries.map((entry) => {
-      const categoryTotals = categoryOptions.map((category) => {
+      const categoryDetails = categoryOptions.flatMap((category) => {
         const amounts = entry.categoryAmounts[category.label] || {}
-        return Object.values(amounts).reduce((sum, value) => sum + value, 0)
+        const amountCounts = amountOptions.map((amount) => amounts[amount.label] || 0)
+        const total = amountCounts.reduce((sum, value) => sum + value, 0)
+        return [...amountCounts, total]
       })
-      return [entry.age, entry.type, ...categoryTotals].join(',')
+
+      return [entry.age, entry.type, ...categoryDetails].join(',')
     })
+
     return [header, ...rows].join('\n')
   }, [entries])
 

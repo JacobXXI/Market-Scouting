@@ -337,7 +337,7 @@ function App() {
 
     if (Capacitor.isNativePlatform()) {
       try {
-        const { uri, path } = await Filesystem.writeFile({
+        const { uri } = await Filesystem.writeFile({
           path: fileName,
           data: csvContent,
           directory: Directory.Documents,
@@ -348,7 +348,7 @@ function App() {
         await Share.share({
           title: 'Market Scouting CSV',
           text: 'Exported visitor insights',
-          url: uri || path,
+          url: uri,
           dialogTitle: 'Share CSV',
         })
       } catch (error) {

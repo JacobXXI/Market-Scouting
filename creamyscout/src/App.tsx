@@ -1,6 +1,5 @@
 import { Capacitor } from '@capacitor/core'
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem'
-import { Share } from '@capacitor/share'
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
@@ -334,6 +333,15 @@ function App() {
 
   const handleDownloadCsv = async () => {
     const fileName = 'market-scouting.csv'
+    const triggerDownload = (url: string) => {
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileName
+      link.style.display = 'none'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    }
 
     if (Capacitor.isNativePlatform()) {
       try {
@@ -345,12 +353,8 @@ function App() {
           recursive: true,
         })
 
-        await Share.share({
-          title: 'Market Scouting CSV',
-          text: 'Exported visitor insights',
-          url: uri,
-          dialogTitle: 'Share CSV',
-        })
+        triggerDownload(Capacitor.convertFileSrc(uri))
+        alert('CSV saved to your device in the Documents folder.')
       } catch (error) {
         console.error('Failed to save CSV on device', error)
         alert('Unable to save CSV file. Please check storage permissions and try again.')
@@ -360,10 +364,7 @@ function App() {
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = fileName
-    link.click()
+    triggerDownload(url)
     URL.revokeObjectURL(url)
   }
 

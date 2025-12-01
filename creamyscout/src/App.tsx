@@ -39,6 +39,19 @@ type Entry = {
   age: string
   type: string
   categoryAmounts: CategoryAmounts
+  timestamp: string
+}
+
+const formatTimestamp = (date: Date) => {
+  const pad = (value: number) => String(value).padStart(2, '0')
+
+  const year = date.getFullYear()
+  const month = pad(date.getMonth() + 1)
+  const day = pad(date.getDate())
+  const hours = pad(date.getHours())
+  const minutes = pad(date.getMinutes())
+
+  return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
 const createEmptyAmountCounts = () =>
@@ -85,7 +98,7 @@ function App() {
   }, [])
 
   const entryColumnTemplate = useMemo(
-    () => `1fr 1fr repeat(${categoryOptions.length}, minmax(80px, 0.8fr)) 90px`,
+    () => `1.2fr 1fr 1fr repeat(${categoryOptions.length}, minmax(80px, 0.8fr)) 90px`,
     [],
   )
 
@@ -134,6 +147,10 @@ function App() {
               age: entry?.age || '',
               type: entry?.type || '',
               categoryAmounts: baseCategoryCounts,
+              timestamp:
+                typeof entry?.timestamp === 'string' && entry.timestamp
+                  ? entry.timestamp
+                  : '',
             }
           })
 
@@ -240,7 +257,7 @@ function App() {
       `${category.label} Total`,
     ])
 
-    const header = ['age', 'type', ...categoryAmountHeaders].join(',')
+    const header = ['time', 'age', 'type', ...categoryAmountHeaders].join(',')
     const rows = entries.map((entry) => {
       const categoryDetails = categoryOptions.flatMap((category) => {
         const amounts = entry.categoryAmounts[category.label] || {}
@@ -249,7 +266,7 @@ function App() {
         return [...amountCounts, total]
       })
 
-      return [entry.age, entry.type, ...categoryDetails].join(',')
+      return [entry.timestamp || '', entry.age, entry.type, ...categoryDetails].join(',')
     })
 
     return [header, ...rows].join('\n')
@@ -309,6 +326,7 @@ function App() {
       age: form.age,
       type: form.type,
       categoryAmounts: { ...createEmptyCategoryAmountCounts(), ...categoryAmounts },
+      timestamp: formatTimestamp(new Date()),
     }
 
     setEntries((prev) => [...prev, entry])
@@ -382,16 +400,17 @@ function App() {
       {entries.length > 0 && (
         <div className="csv-preview">
           <div className="csv-header">
-              <div>
-                <h3>Saved Entries</h3>
-                <p>Each confirmation appends to the CSV log.</p>
-              </div>
-              <button className="download" type="button" onClick={handleDownloadCsv}>
-                Download CSV
-              </button>
+            <div>
+              <h3>Saved Entries</h3>
+              <p>Each confirmation appends to the CSV log.</p>
             </div>
+            <button className="download" type="button" onClick={handleDownloadCsv}>
+              Download CSV
+            </button>
+          </div>
           <div className="csv-content">
             <div className="table-headings" style={{ gridTemplateColumns: entryColumnTemplate }}>
+              <span>Time</span>
               <span>Age</span>
               <span>Type</span>
               {categoryOptions.map((option) => (
@@ -404,21 +423,22 @@ function App() {
             <div className="table-body">
               {entries.map((entry, index) => (
                 <div
-                  key={`${entry.age}-${entry.type}-${index}`}
+                  key={`${entry.timestamp}-${entry.age}-${entry.type}-${index}`}
                   className="table-row"
                   style={{ gridTemplateColumns: entryColumnTemplate }}
                 >
-              <span>{entry.age}</span>
-              <span>{entry.type}</span>
-              {categoryOptions.map((option) => {
-                const amounts = entry.categoryAmounts[option.label] || {}
-                const total = Object.values(amounts).reduce((sum, value) => sum + value, 0)
-                return (
-                  <span key={option.label} className="amount-value">
-                    {total ? <span className="pill">{total}</span> : '0'}
-                  </span>
-                )
-              })}
+                  <span>{entry.timestamp || '—'}</span>
+                  <span>{entry.age}</span>
+                  <span>{entry.type}</span>
+                  {categoryOptions.map((option) => {
+                    const amounts = entry.categoryAmounts[option.label] || {}
+                    const total = Object.values(amounts).reduce((sum, value) => sum + value, 0)
+                    return (
+                      <span key={option.label} className="amount-value">
+                        {total ? <span className="pill">{total}</span> : '0'}
+                      </span>
+                    )
+                  })}
                   <button className="link danger" onClick={() => handleDeleteEntry(index)}>
                     Delete
                   </button>

@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 
 const ageOptions = [
@@ -91,6 +91,8 @@ function App() {
   const [selectedAmounts, setSelectedAmounts] = useState<Record<string, string>>(createEmptySelectedAmounts)
   const [categoryAmounts, setCategoryAmounts] = useState<CategoryAmounts>(createEmptyCategoryAmountCounts)
   const [entries, setEntries] = useState<Entry[]>([])
+  const savedEntriesRef = useRef<HTMLDivElement | null>(null)
+  const [isCompactSavedEntries, setIsCompactSavedEntries] = useState(false)
 
   const storageAvailable = useMemo(() => {
     if (typeof window === 'undefined' || !('localStorage' in window)) return false
@@ -98,8 +100,11 @@ function App() {
   }, [])
 
   const entryColumnTemplate = useMemo(
-    () => `1.2fr 1fr 1fr repeat(${categoryOptions.length}, minmax(80px, 0.8fr)) 90px`,
-    [],
+    () =>
+      isCompactSavedEntries
+        ? `1fr 0.9fr 0.9fr repeat(${categoryOptions.length}, minmax(48px, 0.6fr)) 76px`
+        : `1.2fr 1fr 1fr repeat(${categoryOptions.length}, minmax(80px, 0.8fr)) 90px`,
+    [isCompactSavedEntries],
   )
 
   useEffect(() => {
@@ -250,6 +255,23 @@ function App() {
     if (!storageAvailable) return
     localStorage.setItem('market-selected-amounts', JSON.stringify(selectedAmounts))
   }, [selectedAmounts, storageAvailable])
+
+  useEffect(() => {
+    const element = savedEntriesRef.current
+    if (!element) return
+
+    const updateCompactMode = () => {
+      const hasOverflow = element.scrollWidth - element.clientWidth > 2
+      const isNarrow = element.clientWidth < 560
+      setIsCompactSavedEntries(hasOverflow || isNarrow)
+    }
+
+    const resizeObserver = new ResizeObserver(updateCompactMode)
+    resizeObserver.observe(element)
+    updateCompactMode()
+
+    return () => resizeObserver.disconnect()
+  }, [entries.length])
 
   const csvContent = useMemo(() => {
     const categoryAmountHeaders = categoryOptions.flatMap((category) => [
@@ -408,7 +430,7 @@ function App() {
               Download CSV
             </button>
           </div>
-          <div className="csv-content">
+          <div className="csv-content" ref={savedEntriesRef}>
             <div className="table-headings" style={{ gridTemplateColumns: entryColumnTemplate }}>
               <span>Time</span>
               <span>Age</span>
@@ -427,7 +449,11 @@ function App() {
                   className="table-row"
                   style={{ gridTemplateColumns: entryColumnTemplate }}
                 >
-                  <span>{entry.timestamp || '—'}</span>
+                  <span>
+                    {isCompactSavedEntries
+                      ? (entry.timestamp?.split(' ')[1] || entry.timestamp || '—')
+                      : entry.timestamp || '—'}
+                  </span>
                   <span>{entry.age}</span>
                   <span>{entry.type}</span>
                   {categoryOptions.map((option) => {
@@ -435,7 +461,7 @@ function App() {
                     const total = Object.values(amounts).reduce((sum, value) => sum + value, 0)
                     return (
                       <span key={option.label} className="amount-value">
-                        {total ? <span className="pill">{total}</span> : '0'}
+                        {isCompactSavedEntries ? '—' : total ? <span className="pill">{total}</span> : '0'}
                       </span>
                     )
                   })}

@@ -432,7 +432,7 @@ function App() {
           </div>
           <div className="csv-content" ref={savedEntriesRef}>
             <div className="table-headings" style={{ gridTemplateColumns: entryColumnTemplate }}>
-              <span>Time</span>
+              <span>Age / Time</span>
               {categoryOptions.map((option) => (
                 <span key={option.label} className="amount-heading">
                   {option.label}
@@ -447,10 +447,13 @@ function App() {
                   className="table-row"
                   style={{ gridTemplateColumns: entryColumnTemplate }}
                 >
-                  <span>
-                    {isCompactSavedEntries
-                      ? (entry.timestamp?.split(' ')[1] || entry.timestamp || '—')
-                      : entry.timestamp || '—'}
+                  <span className="age-time">
+                    <span className="age-value">{entry.age || '—'}</span>
+                    <span className="time-value">
+                      {isCompactSavedEntries
+                        ? (entry.timestamp?.split(' ')[1] || entry.timestamp || '—')
+                        : entry.timestamp || '—'}
+                    </span>
                   </span>
                   {categoryOptions.map((option) => {
                     const amounts = entry.categoryAmounts[option.label] || {}

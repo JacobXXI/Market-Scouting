@@ -391,6 +391,15 @@ body {
   border-bottom: none;
 }
 
+.age-value {
+  font-weight: 700;
+}
+
+.time-value {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 .link {
   background: none;
   border: none;

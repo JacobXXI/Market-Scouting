@@ -578,16 +578,24 @@ function App() {
             </button>
           </div>
           <div className="category-tabs">
-            {categoryOptions.map((category) => (
-              <button
-                key={category.label}
-                className={`category-tab ${selectedCategory === category.label ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(category.label)}
-                style={{ backgroundColor: selectedCategory === category.label ? category.color : undefined }}
-              >
-                {category.label}
-              </button>
-            ))}
+            {categoryOptions.map((category) => {
+              const categoryTotal = Object.values(categoryAmounts[category.label] || {}).reduce(
+                (sum, value) => sum + value,
+                0,
+              )
+
+              return (
+                <button
+                  key={category.label}
+                  className={`category-tab ${selectedCategory === category.label ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory(category.label)}
+                  style={{ backgroundColor: selectedCategory === category.label ? category.color : undefined }}
+                >
+                  {category.label}
+                  <span className="category-total">{categoryTotal}</span>
+                </button>
+              )
+            })}
           </div>
           <AmountGrid />
         </div>

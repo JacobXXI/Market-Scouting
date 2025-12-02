@@ -391,13 +391,6 @@ body {
   border-bottom: none;
 }
 
-.age-time {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  line-height: 1.2;
-}
-
 .age-value {
   font-weight: 700;
 }

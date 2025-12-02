@@ -102,8 +102,8 @@ function App() {
   const entryColumnTemplate = useMemo(
     () =>
       isCompactSavedEntries
-        ? `1fr repeat(${categoryOptions.length}, minmax(48px, 0.6fr)) 76px`
-        : `1.2fr repeat(${categoryOptions.length}, minmax(80px, 0.8fr)) 90px`,
+        ? `0.9fr 0.9fr repeat(${categoryOptions.length}, minmax(48px, 0.6fr)) 76px`
+        : `1fr 1fr repeat(${categoryOptions.length}, minmax(80px, 0.8fr)) 90px`,
     [isCompactSavedEntries],
   )
 
@@ -432,7 +432,8 @@ function App() {
           </div>
           <div className="csv-content" ref={savedEntriesRef}>
             <div className="table-headings" style={{ gridTemplateColumns: entryColumnTemplate }}>
-              <span>Age / Time</span>
+              <span>Age</span>
+              <span>Time</span>
               {categoryOptions.map((option) => (
                 <span key={option.label} className="amount-heading">
                   {option.label}
@@ -447,13 +448,11 @@ function App() {
                   className="table-row"
                   style={{ gridTemplateColumns: entryColumnTemplate }}
                 >
-                  <span className="age-time">
-                    <span className="age-value">{entry.age || '—'}</span>
-                    <span className="time-value">
-                      {isCompactSavedEntries
-                        ? (entry.timestamp?.split(' ')[1] || entry.timestamp || '—')
-                        : entry.timestamp || '—'}
-                    </span>
+                  <span className="age-value">{entry.age || '—'}</span>
+                  <span className="time-value">
+                    {isCompactSavedEntries
+                      ? (entry.timestamp?.split(' ')[1] || entry.timestamp || '—')
+                      : entry.timestamp || '—'}
                   </span>
                   {categoryOptions.map((option) => {
                     const amounts = entry.categoryAmounts[option.label] || {}

@@ -176,7 +176,7 @@ body {
   box-shadow: var(--shadow);
   transition: transform 0.1s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   position: relative;
-  padding-right: 46px;
+  padding-right: 56px;
 }
 
 .category-tab.active {
@@ -187,7 +187,7 @@ body {
 .category-total {
   position: absolute;
   top: 6px;
-  right: 8px;
+  right: 2px;
   min-width: 28px;
   padding: 4px 8px;
   border-radius: 12px;

@@ -618,6 +618,9 @@ function App() {
                 {categoryOptions.map((category) => {
                   const amounts = categoryAmounts[category.label] || {}
                   const categoryTotal = Object.values(amounts).reduce((sum, value) => sum + value, 0)
+                  if (categoryTotal === 0) return null
+
+                  const nonZeroAmounts = amountOptions.filter((option) => (amounts[option.label] || 0) > 0)
                   return (
                     <div key={category.label} className="category-summary">
                       <div className="category-summary-header">
@@ -625,7 +628,7 @@ function App() {
                         <span className="pill">{categoryTotal}</span>
                       </div>
                       <div className="amount-grid compact">
-                        {amountOptions.map((option) => (
+                        {nonZeroAmounts.map((option) => (
                           <div key={option.label} className="amount-summary-cell">
                             <span className="amount-label">{option.label}</span>
                             <span className="pill">{amounts[option.label] || 0}</span>

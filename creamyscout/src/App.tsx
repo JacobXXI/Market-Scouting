@@ -102,8 +102,8 @@ function App() {
   const entryColumnTemplate = useMemo(
     () =>
       isCompactSavedEntries
-        ? `1fr 0.9fr 0.9fr repeat(${categoryOptions.length}, minmax(48px, 0.6fr)) 76px`
-        : `1.2fr 1fr 1fr repeat(${categoryOptions.length}, minmax(80px, 0.8fr)) 90px`,
+        ? `1fr repeat(${categoryOptions.length}, minmax(48px, 0.6fr)) 76px`
+        : `1.2fr repeat(${categoryOptions.length}, minmax(80px, 0.8fr)) 90px`,
     [isCompactSavedEntries],
   )
 
@@ -433,8 +433,6 @@ function App() {
           <div className="csv-content" ref={savedEntriesRef}>
             <div className="table-headings" style={{ gridTemplateColumns: entryColumnTemplate }}>
               <span>Time</span>
-              <span>Age</span>
-              <span>Type</span>
               {categoryOptions.map((option) => (
                 <span key={option.label} className="amount-heading">
                   {option.label}
@@ -454,8 +452,6 @@ function App() {
                       ? (entry.timestamp?.split(' ')[1] || entry.timestamp || '—')
                       : entry.timestamp || '—'}
                   </span>
-                  <span>{entry.age}</span>
-                  <span>{entry.type}</span>
                   {categoryOptions.map((option) => {
                     const amounts = entry.categoryAmounts[option.label] || {}
                     const total = Object.values(amounts).reduce((sum, value) => sum + value, 0)

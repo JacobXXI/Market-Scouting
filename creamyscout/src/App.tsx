@@ -20,14 +20,15 @@ const typeOptions = [
 
 const amountOptions = [
   { label: '$0 - 5', color: '#E8F5E9' },
-  { label: '$5 - 10', color: '#FFF3E0' },
-  { label: '$10 - 20', color: '#E3F2FD' },
-  { label: '$20+', color: '#F3E5F5' },
+  { label: '$6 - 10', color: '#FFF3E0' },
+  { label: '$11 - 20', color: '#E3F2FD' },
+  { label: '$21 - 50', color: '#F3E5F5' },
 ]
 
 const categoryOptions = [
   { label: 'Accessories', color: '#FFE6F0' },
   { label: 'Clothes', color: '#E6FFF5' },
+  { label: 'Second Hand', color: '#E3F2FD'},
   { label: 'Others', color: '#FFF7E6' },
 ]
 

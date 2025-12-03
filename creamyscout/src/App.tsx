@@ -32,13 +32,14 @@ const categoryOptions = [
   { label: 'Others', color: '#FFF7E6' },
 ]
 
-type Step = 'start' | 'age' | 'type' | 'amount' | 'confirm'
+type Step = 'start' | 'age' | 'type' | 'amount' | 'reference' | 'confirm'
 
 type CategoryAmounts = Record<string, Record<string, number>>
 
 type Entry = {
   age: string
   type: string
+  referenceNumber: string
   categoryAmounts: CategoryAmounts
   timestamp: string
 }
@@ -87,7 +88,11 @@ const isLocalStorageAvailable = () => {
 
 function App() {
   const [step, setStep] = useState<Step>('start')
-  const [form, setForm] = useState<{ age: string; type: string }>({ age: '', type: '' })
+  const [form, setForm] = useState<{ age: string; type: string; referenceNumber: string }>({
+    age: '',
+    type: '',
+    referenceNumber: '',
+  })
   const [selectedCategory, setSelectedCategory] = useState(categoryOptions[0].label)
   const [selectedAmounts, setSelectedAmounts] = useState<Record<string, string>>(createEmptySelectedAmounts)
   const [categoryAmounts, setCategoryAmounts] = useState<CategoryAmounts>(createEmptyCategoryAmountCounts)
@@ -152,6 +157,7 @@ function App() {
             return {
               age: entry?.age || '',
               type: entry?.type || '',
+              referenceNumber: typeof entry?.referenceNumber === 'string' ? entry.referenceNumber : '',
               categoryAmounts: baseCategoryCounts,
               timestamp:
                 typeof entry?.timestamp === 'string' && entry.timestamp
@@ -200,13 +206,14 @@ function App() {
           setForm({
             age: parsedForm.age || '',
             type: parsedForm.type || '',
+            referenceNumber: parsedForm.referenceNumber || '',
           })
         }
       } catch (error) {
         console.error('Failed to parse saved form', error)
       }
     }
-    if (storedStep && ['start', 'age', 'type', 'amount', 'confirm'].includes(storedStep)) {
+    if (storedStep && ['start', 'age', 'type', 'amount', 'reference', 'confirm'].includes(storedStep)) {
       setStep(storedStep)
     }
     if (storedSelectedCategory && categoryOptions.some((category) => category.label === storedSelectedCategory)) {
@@ -280,7 +287,7 @@ function App() {
       `${category.label} Total`,
     ])
 
-    const header = ['time', 'age', 'type', ...categoryAmountHeaders].join(',')
+    const header = ['time', 'age', 'type', 'reference number', ...categoryAmountHeaders].join(',')
     const rows = entries.map((entry) => {
       const categoryDetails = categoryOptions.flatMap((category) => {
         const amounts = entry.categoryAmounts[category.label] || {}
@@ -289,7 +296,7 @@ function App() {
         return [...amountCounts, total]
       })
 
-      return [entry.timestamp || '', entry.age, entry.type, ...categoryDetails].join(',')
+      return [entry.timestamp || '', entry.age, entry.type, entry.referenceNumber || '', ...categoryDetails].join(',')
     })
 
     return [header, ...rows].join('\n')
@@ -311,6 +318,11 @@ function App() {
   const handleSelectType = (type: string) => {
     setForm((prev) => ({ ...prev, type }))
     setStep('amount')
+  }
+
+  const handleReferenceChange = (value: string) => {
+    const sanitized = value.replace(/\D/g, '').slice(0, 6)
+    setForm((prev) => ({ ...prev, referenceNumber: sanitized }))
   }
 
   const handleSelectAmount = (amount: string) => {
@@ -345,15 +357,17 @@ function App() {
 
   const handleConfirm = () => {
     if (!form.age || !form.type || !hasAmountSelections) return
+    const referenceNumber = form.referenceNumber.trim()
     const entry: Entry = {
       age: form.age,
       type: form.type,
+      referenceNumber,
       categoryAmounts: { ...createEmptyCategoryAmountCounts(), ...categoryAmounts },
       timestamp: formatTimestamp(new Date()),
     }
 
     setEntries((prev) => [...prev, entry])
-    setForm({ age: '', type: '' })
+    setForm({ age: '', type: '', referenceNumber: '' })
     setSelectedCategory(categoryOptions[0].label)
     setSelectedAmounts(createEmptySelectedAmounts())
     setCategoryAmounts(createEmptyCategoryAmountCounts())
@@ -361,7 +375,7 @@ function App() {
   }
 
   const resetToStart = () => {
-    setForm({ age: '', type: '' })
+    setForm({ age: '', type: '', referenceNumber: '' })
     setSelectedCategory(categoryOptions[0].label)
     setSelectedAmounts(createEmptySelectedAmounts())
     setCategoryAmounts(createEmptyCategoryAmountCounts())
@@ -561,7 +575,7 @@ function App() {
         <div className="screen">
           <BackButton
             onClick={() => {
-              setForm((prev) => ({ ...prev, type: '' }))
+              setForm((prev) => ({ ...prev, type: '', referenceNumber: '' }))
               setSelectedCategory(categoryOptions[0].label)
               setSelectedAmounts(createEmptySelectedAmounts())
               setCategoryAmounts(createEmptyCategoryAmountCounts())
@@ -573,7 +587,7 @@ function App() {
               <h2>Select Spend Amount</h2>
               <p>Tap to add +1. Use the cross to reduce.</p>
             </div>
-            <button className="primary" disabled={!hasAmountSelections} onClick={() => setStep('confirm')}>
+            <button className="primary" disabled={!hasAmountSelections} onClick={() => setStep('reference')}>
               Proceed
             </button>
           </div>
@@ -601,11 +615,41 @@ function App() {
         </div>
       )}
 
+      {step === 'reference' && (
+        <div className="screen">
+          <BackButton onClick={() => setStep('amount')} />
+          <div className="title">
+            <h2>Reference Number (optional)</h2>
+            <p>Enter the 6-digit reference if provided.</p>
+          </div>
+          <div className="reference-card">
+            <label className="field-label" htmlFor="reference-number">
+              Reference number
+            </label>
+            <input
+              id="reference-number"
+              className="text-input"
+              type="text"
+              inputMode="numeric"
+              pattern="\d{6}"
+              maxLength={6}
+              placeholder="000000"
+              value={form.referenceNumber}
+              onChange={(event) => handleReferenceChange(event.target.value)}
+            />
+            <p className="hint-text">6 digits. Leave blank to skip.</p>
+          </div>
+          <button className="primary full" onClick={() => setStep('confirm')}>
+            Next
+          </button>
+        </div>
+      )}
+
       {step === 'confirm' && (
         <div className="screen">
           <BackButton
             onClick={() => {
-              setStep('amount')
+              setStep('reference')
             }}
           />
           <div className="confirm-card">
@@ -618,6 +662,10 @@ function App() {
               <div>
                 <span className="hint">Type</span>
                 <strong>{form.type}</strong>
+              </div>
+              <div>
+                <span className="hint">Reference # (optional)</span>
+                <strong>{form.referenceNumber || '—'}</strong>
               </div>
             </div>
             <div className="amount-summary columned">

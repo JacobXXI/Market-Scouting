@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem'
+import { Share } from '@capacitor/share'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 
@@ -409,13 +410,19 @@ function App() {
         const { uri } = await Filesystem.writeFile({
           path: fileName,
           data: csvContent,
-          directory: Directory.Documents,
+          directory: Directory.Cache,
           encoding: Encoding.UTF8,
           recursive: true,
         })
 
-        triggerDownload(Capacitor.convertFileSrc(uri))
-        alert('CSV saved to your device in the Documents folder.')
+        await Share.share({
+          title: 'Market Scouting CSV',
+          text: 'Share or save the exported CSV through your preferred app.',
+          url: uri,
+          dialogTitle: 'Share or save CSV file',
+        })
+
+        alert('Choose where to save or share the CSV using the system sheet.')
       } catch (error) {
         alert('Failed to save CSV on device: ' + error)
       }

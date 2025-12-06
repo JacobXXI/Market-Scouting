@@ -550,7 +550,7 @@ function App() {
             }}
           />
           <div className="title">
-            <h2>Select Cuisine Type</h2>
+            <h2>Select Type</h2>
             <p>Pick the closest fit.</p>
           </div>
           <SelectionGrid options={typeOptions} onSelect={handleSelectType} />

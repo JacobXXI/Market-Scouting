@@ -386,6 +386,15 @@ function App() {
 
     if (Capacitor.isNativePlatform()) {
       try {
+        const { publicStorage } = await Filesystem.checkPermissions()
+        if (publicStorage !== 'granted') {
+          const permissionResult = await Filesystem.requestPermissions()
+          if (permissionResult.publicStorage !== 'granted') {
+            alert('Storage permission is required to save the CSV file.')
+            return
+          }
+        }
+
         const { uri } = await Filesystem.writeFile({
           path: fileName,
           data: csvContent,

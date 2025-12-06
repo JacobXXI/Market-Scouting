@@ -372,6 +372,23 @@ function App() {
     setEntries((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const requestNativeStoragePermission = async () => {
+    const { publicStorage } = await Filesystem.checkPermissions()
+
+    if (publicStorage === 'granted') {
+      return true
+    }
+
+    const permissionResult = await Filesystem.requestPermissions()
+
+    if (permissionResult.publicStorage === 'granted') {
+      return true
+    }
+
+    alert('Storage permission is required to save the CSV file to your device.')
+    return false
+  }
+
   const handleDownloadCsv = async () => {
     const fileName = 'market-scouting.csv'
     const triggerDownload = (url: string) => {
@@ -386,6 +403,9 @@ function App() {
 
     if (Capacitor.isNativePlatform()) {
       try {
+        const permissionGranted = await requestNativeStoragePermission()
+        if (!permissionGranted) return
+
         const { uri } = await Filesystem.writeFile({
           path: fileName,
           data: csvContent,

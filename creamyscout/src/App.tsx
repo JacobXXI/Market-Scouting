@@ -417,8 +417,7 @@ function App() {
         triggerDownload(Capacitor.convertFileSrc(uri))
         alert('CSV saved to your device in the Documents folder.')
       } catch (error) {
-        console.error('Failed to save CSV on device', error)
-        alert('Unable to save CSV file. Please check storage permissions and try again.')
+        alert('Failed to save CSV on device: ' + error)
       }
       return
     }
